@@ -30,7 +30,9 @@ public :
     std::vector<Vector3D> getvertex() const;
     std::vector<int> getface() const;
     void setVertex(std::vector<Vector3D> vertex);
-    void setFace(std::vector<int> face);
+    void setFace(std::vector<int> faces);
+    void addVertex(const Vector3D& _vertex);
+    void addFace(const unsigned int& refPointFace1, const unsigned int& refPointFace2, const unsigned int& refPointFace3);
     size_t nbvertex() const;
     size_t nbface() const;
 

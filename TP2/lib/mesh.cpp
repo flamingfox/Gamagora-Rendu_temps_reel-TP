@@ -44,12 +44,32 @@ std::vector<int> Mesh::getface() const{
 
 void Mesh::setVertex(std::vector<Vector3D> vertex)
 {
-    this->vertex = vertex;
+    this->vertex.clear();
+
+    for(Vector3D vec : vertex){
+        this->vertex.push_back(vec);
+    }
 }
 
-void Mesh::setFace(std::vector<int> face)
+void Mesh::setFace(std::vector<int> faces)
 {
-    this->face = face;
+    this->face.clear();
+
+    for(int face : faces){
+        this->face.push_back(face);
+    }
+}
+
+void Mesh::addVertex(const Vector3D& _vertex)
+{
+    vertex.push_back(_vertex);
+}
+
+void Mesh::addFace(const unsigned int& refPointFace1, const unsigned int& refPointFace2, const unsigned int& refPointFace3)
+{
+    face.push_back(refPointFace1);
+    face.push_back(refPointFace2);
+    face.push_back(refPointFace3);
 }
 
 size_t Mesh::nbvertex() const

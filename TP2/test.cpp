@@ -21,6 +21,8 @@ void init();
 
 #define glInfo(a) std::cout << #a << ": " << glGetString(a) << std::endl
 
+int nbVertex;
+
 // This function is called on any openGL API error
 void debug(GLenum, // source
 		   GLenum, // type
@@ -194,15 +196,38 @@ void init()
     gs.program = buildProgram("C:/Users/etu/workspace/code/Rendu temps reel/TP2/basic.vsl", "C:/Users/etu/workspace/code/Rendu temps reel/TP2/basic.fsl");
 
 
+    Mesh m;
+
+    m = ObjManager::loadFromOBJ(Vector3D(0,0,0), "C:/Users/etu/workspace/code/Rendu temps reel/TP2/M9.obj");
+
+    nbVertex = m.nbface();
+
+    float data[nbVertex*4];
+
+    std::vector<Vector3D> vertex = m.getvertex();
+
+    int i=0;
+    for(int face : m.getface()){
+        data[i] = vertex[face].x;
+        data[i+1] = vertex[face].y;
+        data[i+2] = vertex[face].z;
+        data[i+3] = 1;
+        i+=4;
+    }
+
+    //m.getvertex();
+    //m.getface();
+
+    /*
     float data[16] = {-0.5, -0.5, 0, 1,
                     0.5, -0.5, 0, 1,
                     0.5, 0.5, 0, 1,
-                    -0.5, 0.5, 0, 1};
+                    -0.5, 0.5, 0, 1};*/
 
 	GLuint buffer;
 	glGenBuffers(1, &buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, 16*4, data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, m.nbface()*4*4, data, GL_STATIC_DRAW);
 
 	glCreateVertexArrays(1, &gs.vao);
 
@@ -275,9 +300,10 @@ void render(GLFWwindow* window)
 
         glProgramUniformMatrix4fv(gs.program, 1, 1, GL_FALSE,  &transf[0][0]);
 
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glDrawArrays(GL_TRIANGLES, 0, nbVertex*4);
 
 
+        /*
         color[0] = 1; color[1] = 0, color[2] = sin(t*3.14);
         glProgramUniform3fv(gs.program, 3, 1, color);
 
@@ -285,7 +311,7 @@ void render(GLFWwindow* window)
 
         glProgramUniformMatrix4fv(gs.program, 1, 1, GL_FALSE, &transf[0][0]);
 
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);*/
 	}
 
 	glBindVertexArray(0);
