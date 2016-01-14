@@ -4,10 +4,6 @@ layout(location=1) uniform mat4 transform;
 
 layout(location=23) uniform mat4 cameraTransform;
 
-//layout(location=1) uniform vec3 translate;
-//layout(location=2) uniform vec3 rotation;
-//layout(location=3) uniform vec3 scale;
-
 layout(location=12) in vec4 position;
 layout(location=13) in vec4 normal;
 
