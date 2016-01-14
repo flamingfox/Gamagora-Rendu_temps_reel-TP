@@ -10,7 +10,7 @@ in vec3 finalPosition;
 
 void main()
 {
-        color_out = vec4(color, 1)* dot( shadingNormal, lightPosition - finalPosition ) / (shadingNormal.length() * (lightPosition - finalPosition).length());
+        color_out = vec4(color, 1) * abs(dot( normalize(shadingNormal), normalize(lightPosition - finalPosition) ));
         //color_out = abs(shadingNormal);
 
 }
