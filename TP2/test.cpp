@@ -294,7 +294,7 @@ void render(GLFWwindow* window)
 
         //transf = glm::translate(glm::mat4(1.0f), glm::vec3(cos(t*6.28), sin(t*6.28), 0.0) );
 
-        transf = glm::translate(glm::mat4(1.0f), glm::vec3(cos(t*6.28), sin(t*6.28), 0.0) )*
+        transf = //glm::translate(glm::mat4(1.0f), glm::vec3(cos(t*6.28), sin(t*6.28), 0.0) )*
                 glm::rotate(glm::mat4(1.0f), (float)(t2*180.0/3.0f), glm::vec3(0,1,0));
 
 
