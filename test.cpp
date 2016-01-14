@@ -193,12 +193,12 @@ struct
 void init()
 {
 	// Build our program and an empty VAO
-    gs.program = buildProgram("C:/Users/etu/workspace/code/Rendu temps reel/TP2/basic.vsl", "C:/Users/etu/workspace/code/Rendu temps reel/TP2/basic.fsl");
+    gs.program = buildProgram("C:/Users/etu/workspace/code/Rendu temps reel/basic.vsl", "C:/Users/etu/workspace/code/Rendu temps reel/basic.fsl");
 
 
     Mesh m;
 
-    m = ObjManager::loadFromOBJ(Vector3D(0,0,0), "C:/Users/etu/workspace/code/Rendu temps reel/TP2/M9.obj");
+    m = ObjManager::loadFromOBJ(Vector3D(0,0,0), "C:/Users/etu/workspace/code/Rendu temps reel/M9.obj");
 
     nbVertex = m.nbface();
 
