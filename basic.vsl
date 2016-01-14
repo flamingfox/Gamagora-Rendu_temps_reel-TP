@@ -7,11 +7,13 @@ layout(location=23) uniform mat4 cameraTransform;
 layout(location=12) in vec4 position;
 layout(location=13) in vec4 normal;
 
-out vec4 shadingNormal;
+out vec3 shadingNormal;
+out vec3 finalPosition;
 
 void main()
 {
         gl_Position = cameraTransform * transform * position;
 
-        shadingNormal = normal;
+        finalPosition = vec3(gl_Position.x, gl_Position.y, gl_Position.z);
+        shadingNormal = vec3(normal.x, normal.y, normal.z);
 }

@@ -11,6 +11,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/ext.hpp>
 
 #include "lib/objmanager.h"
 #include "lib/mesh.h"
@@ -320,6 +321,7 @@ void render(GLFWwindow* window)
     {
         float color[3] = {sin(t*3.14),1,0};
         glProgramUniform3fv(gs.program, 3, 1, color);
+        glProgramUniform3fv(gs.program, 4, 1, glm::value_ptr( glm::vec3(5.0f,5.0f,0) ));
 
         glm::mat4 transf;
 
