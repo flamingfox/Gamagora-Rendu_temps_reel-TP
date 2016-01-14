@@ -9,13 +9,13 @@ layout(location=23) uniform mat4 cameraTransform;
 //layout(location=3) uniform vec3 scale;
 
 layout(location=12) in vec4 position;
-//layout(location=13) in vec4 normal;
+layout(location=13) in vec4 normal;
 
-//out vec4 shadingNormal;
+out vec4 shadingNormal;
 
 void main()
 {
         gl_Position = cameraTransform * transform * position;
 
-        //shadingNormal = normal;
+        shadingNormal = normal;
 }
