@@ -203,16 +203,39 @@ void init()
     nbVertex = m.nbface();
 
     float data[nbVertex*4];
+    float dataNormal[nbVertex*4];
 
     std::vector<Vector3D> vertex = m.getvertex();
+    std::vector<int> face = m.getface();
 
     int i=0;
-    for(int face : m.getface()){
-        data[i] = vertex[face].x;
-        data[i+1] = vertex[face].y;
-        data[i+2] = vertex[face].z;
+    for(int j=0; j<face.size(); j+=3){
+        //set vertex
+        data[i] = vertex[face[j]].x;
+        data[i+1] = vertex[face[j]].y;
+        data[i+2] = vertex[face[j]].z;
         data[i+3] = 1;
-        i+=4;
+
+        data[i+4] = vertex[face[j+1]].x;
+        data[i+5] = vertex[face[j+1]].y;
+        data[i+6] = vertex[face[j+1]].z;
+        data[i+7] = 1;
+
+        data[i+8] = vertex[face[j+2]].x;
+        data[i+9] = vertex[face[j+2]].y;
+        data[i+10] = vertex[face[j+2]].z;
+        data[i+11] = 1;
+
+        //set normal
+        Vector3D normal = ( vertex[face[j+1]] - vertex[face[j]] ).crossProduct( ( vertex[face[j+2]] - vertex[face[j+1]] ) );
+        normal.normalize();
+
+        dataNormal[i] = normal.x;       dataNormal[i+4] = normal.x;     dataNormal[i+8] = normal.x;
+        dataNormal[i+1] = normal.y;     dataNormal[i+5] = normal.y;     dataNormal[i+9] = normal.y;
+        dataNormal[i+2] = normal.z;     dataNormal[i+6] = normal.z;     dataNormal[i+10] = normal.z;
+        dataNormal[i+3] = 1;            dataNormal[i+7] = 1;            dataNormal[i+11] = 1;
+
+        i+=12;
     }
 
     //m.getvertex();
@@ -229,6 +252,11 @@ void init()
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
     glBufferData(GL_ARRAY_BUFFER, m.nbface()*4*4, data, GL_STATIC_DRAW);
 
+    GLuint buffer2;
+    glGenBuffers(1, &buffer2);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer2);
+    glBufferData(GL_ARRAY_BUFFER, m.nbface()*4*4, data, GL_STATIC_DRAW);
+
 	glCreateVertexArrays(1, &gs.vao);
 
 	glBindVertexArray(gs.vao);
@@ -237,7 +265,11 @@ void init()
 		glVertexAttribPointer(12, 3, GL_FLOAT, GL_FALSE, 16, 0);
 		glEnableVertexAttribArray(12);
 
-	glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, buffer2);
+        glVertexAttribPointer(13, 3, GL_FLOAT, GL_FALSE, 16, 0);
+        glEnableVertexAttribArray(13);
+
+    glBindVertexArray(0);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -250,7 +282,7 @@ void init()
 
      // Camera matrix
      glm::mat4 View = glm::lookAt(
-                    glm::vec3(0,0,-5), // Camera is at (4,3,3), in World Space
+                    glm::vec3(0,0,-2), // Camera is at (4,3,3), in World Space
                     glm::vec3(0,0,0), // and looks at the origin
                     glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
                     );
@@ -273,29 +305,28 @@ void init()
 
 void render(GLFWwindow* window)
 {
-	int width, height;
-	glfwGetFramebufferSize(window, &width, &height);
-	glViewport(0, 0, width, height);
-	
-    double t = fmod(glfwGetTime(), 3.0)/3.0;
-    double t2 = fmod(glfwGetTime(), 12.0)/12.0;
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    glViewport(0, 0, width, height);
 
-	glClear(GL_COLOR_BUFFER_BIT);
+    double t = fmod(glfwGetTime(), 3.0)/3.0;
+
+    glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(gs.program);
-	glBindVertexArray(gs.vao);
+    glUseProgram(gs.program);
+    glBindVertexArray(gs.vao);
 
     {
         float color[3] = {sin(t*3.14),1,0};
-		glProgramUniform3fv(gs.program, 3, 1, color);
+        glProgramUniform3fv(gs.program, 3, 1, color);
 
         glm::mat4 transf;
 
         //transf = glm::translate(glm::mat4(1.0f), glm::vec3(cos(t*6.28), sin(t*6.28), 0.0) );
 
         transf = //glm::translate(glm::mat4(1.0f), glm::vec3(cos(t*6.28), sin(t*6.28), 0.0) )*
-                glm::rotate(glm::mat4(1.0f), (float)(t2*180.0/3.0f), glm::vec3(0,1,0));
+                glm::rotate(glm::mat4(1.0f), (float)(t*6.28f), glm::vec3(0,1,0));
 
 
         glProgramUniformMatrix4fv(gs.program, 1, 1, GL_FALSE,  &transf[0][0]);
@@ -312,9 +343,9 @@ void render(GLFWwindow* window)
         glProgramUniformMatrix4fv(gs.program, 1, 1, GL_FALSE, &transf[0][0]);
 
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);*/
-	}
+    }
 
-	glBindVertexArray(0);
-	glUseProgram(0);
+    glBindVertexArray(0);
+    glUseProgram(0);
 
 }
