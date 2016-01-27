@@ -10,6 +10,8 @@
 #include <iomanip>
 #include <fstream>
 
+//#include <glm/glm.hpp>
+
 namespace ObjManager
 {
     Mesh loadFromOBJ(const Vector3D &center, const char* obj);

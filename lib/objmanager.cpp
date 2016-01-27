@@ -5,12 +5,14 @@ Mesh ObjManager::loadFromOBJ(const Vector3D &center, const char* obj){
     Mesh retour;
 
     /*
-    std::vector<Vector3D> geom;
+    std::vector<Vector3D> vertex;
+    std::vector<int> face;
+    */
     std::vector<Vector3D> normalsPoints;
-    std::vector<int> topo;
-    std::vector<int> normalIds; */
+    std::vector<int> normalIds;
 
-    Vector3D centreGravite;
+
+    //Vector3D centreGravite;
 
     Vector3D minVal(1E100, 1E100, 1E100), maxVal(-1E100, -1E100, -1E100);
     FILE* f = fopen(obj, "r");
@@ -22,7 +24,7 @@ Mesh ObjManager::loadFromOBJ(const Vector3D &center, const char* obj){
         if (line[0]=='v' && line[1]==' ') {
             Vector3D vec;
             sscanf(line, "v %f %f %f\n", &vec[0], &vec[2], &vec[1]);
-            vec[2] = -vec[2];
+            //vec[2] = vec[2];
             Vector3D p = vec + center;
             retour.addVertex(p);
             maxVal[0] = std::max(maxVal[0], p[0]);
@@ -32,13 +34,13 @@ Mesh ObjManager::loadFromOBJ(const Vector3D &center, const char* obj){
             minVal[1] = std::min(minVal[1], p[1]);
             minVal[2] = std::min(minVal[2], p[2]);
 
-            centreGravite += p;
+            //centreGravite += p;
         }
         if (line[0]=='v' && line[1]=='n') {
             Vector3D vec;
             sscanf(line, "vn %f %f %f\n", &vec[0], &vec[2], &vec[1]);
-            vec[2] = -vec[2];
-            //normalsPoints.push_back(vec);
+            //vec[2] = vec[2];
+            normalsPoints.push_back(vec.normalized());
         }
         if (line[0]=='f') {
             int i0, i1, i2;
@@ -76,17 +78,44 @@ Mesh ObjManager::loadFromOBJ(const Vector3D &center, const char* obj){
 
             }
             else if(n==6){
-                sscanf(line, "f %u/%u/%u %u/%u/%u %u/%u/%u\n", &i0, &j0, &k0, &i1, &j1, &k1, &i2, &j2, &k2 );
+                if(sscanf(line, "f %u/%u/%u %u/%u/%u %u/%u/%u\n", &i0, &j0, &k0, &i1, &j1, &k1, &i2, &j2, &k2 ) < 0);
+                    sscanf(line, "f %u//%u %u//%u %u//%u\n", &i0, &k0, &i1, &k1, &i2, &k2 );
 
                 retour.addFace(i0-1, i1-1, i2-1);
-                //topo.push_back(i0-1);
-                //topo.push_back(i1-1);
-                //topo.push_back(i2-1);
-                //normalIds.push_back(k0-1);
-                //normalIds.push_back(k1-1);
-                //normalIds.push_back(k2-1);
+                normalIds.push_back(k0-1);
+                normalIds.push_back(k1-1);
+                normalIds.push_back(k2-1);
             }
         }
+    }
+
+    if(normalsPoints.empty() || normalIds.empty()){
+
+        for (int i = 0; i < retour.getface().size(); i+=3)
+            {
+                int ia = retour.getface()[i];
+                int ib = retour.getface()[i+1];
+                int ic = retour.getface()[i+2];
+
+
+                Vector3D normal = (retour.getvertex()[ib] - retour.getvertex()[ia]).crossProduct(
+                            (retour.getvertex()[ic] - retour.getvertex()[ia])).normalized();
+
+
+
+                /*
+                Vector3D normal = Vector3D(XYZ(glm::normalize(glm::cross(
+                glm::vec3(XYZ(retour.getvertex()[ib])) - glm::vec3(XYZ(retour.getvertex()[ia])),
+                glm::vec3(XYZ(retour.getvertex()[ic])) - glm::vec3(XYZ(retour.getvertex()[ia]))))));*/
+
+                retour.addNormal(normal); retour.addNormal(normal); retour.addNormal(normal);
+                retour.addNormalId(i); retour.addNormalId(i+1); retour.addNormalId(i+2);
+            }
+
+    }
+    else{
+        retour.setNormals(normalsPoints);
+        retour.setNormalIds(normalIds);
     }
 
     /*boundingSphere.C = 0.5*(minVal+maxVal);
@@ -104,9 +133,9 @@ Mesh ObjManager::loadFromOBJ(const Vector3D &center, const char* obj){
         retour.addFace(topo);
     }*/
 
-    centreGravite /= retour.nbvertex();
-    retour.translation(centreGravite.x, centreGravite.y, centreGravite.z);
-    retour.rescale( 1/(maxVal-minVal).getNorm() );
+    //centreGravite /= retour.nbvertex();
+    //retour.translation(centreGravite.x, centreGravite.y, centreGravite.z);
+    //retour.rescale( 1/(maxVal-minVal).getNorm() );
 
     return retour;
 }

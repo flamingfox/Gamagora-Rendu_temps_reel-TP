@@ -51,7 +51,16 @@ void Mesh::setVertex(std::vector<Vector3D> vertex)
     }
 }
 
-void Mesh::setFace(std::vector<int> faces)
+void Mesh::setNormals(std::vector<Vector3D> normals)
+{
+    this->normalsPoints.clear();
+
+    for(Vector3D vec : normals){
+        this->normalsPoints.push_back(vec);
+    }
+}
+
+void Mesh::setFaces(std::vector<int> faces)
 {
     this->face.clear();
 
@@ -63,6 +72,16 @@ void Mesh::setFace(std::vector<int> faces)
 void Mesh::addVertex(const Vector3D& _vertex)
 {
     vertex.push_back(_vertex);
+}
+
+void Mesh::addNormal(const Vector3D &_normal)
+{
+    normalsPoints.push_back(_normal);
+}
+
+void Mesh::addNormalId(const int &_normalId)
+{
+    normalIds.push_back(_normalId);
 }
 
 void Mesh::addFace(const unsigned int& refPointFace1, const unsigned int& refPointFace2, const unsigned int& refPointFace3)

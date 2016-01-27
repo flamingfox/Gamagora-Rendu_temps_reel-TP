@@ -4,13 +4,13 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 
-LIBS += -L/extLib/glew/lib/Release/win32 -lglew32
-LIBS += -L/extLib/glfw/lib-mingw-w64 -lglfw3
-LIBS  += -lopengl32 -lgdi32
+LIBS += -L$$PWD/extLib/glew/lib/Release/Win32 -lglew32
+LIBS += -L$$PWD/extLib/glfw/lib-mingw-w64 -lglfw3
+LIBS += -lopengl32 -lgdi32
 
-INCLUDEPATH += \extLib
-INCLUDEPATH += \extLib\glew\include
-INCLUDEPATH += \extLib\glfw\include
+INCLUDEPATH += ./extLib
+INCLUDEPATH += ./extLib\glew\include
+INCLUDEPATH += ./extLib\glfw\include
 
 SOURCES += \
     test.cpp \

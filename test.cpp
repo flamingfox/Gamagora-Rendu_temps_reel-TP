@@ -125,7 +125,7 @@ GLuint buildShader(GLenum const shaderType, std::string const src)
 
 		GLsizei readSize;
 		glGetShaderInfoLog(shader, 1000, &readSize, message);
-		message[999] = '\0';
+        message[999] = '/0';
 
 		std::cerr << message << std::endl;
 
@@ -169,7 +169,7 @@ GLuint buildProgram(const std::string vertexFile, const std::string fragmentFile
 
 		GLsizei readSize;
 		glGetProgramInfoLog(program, 1000, &readSize, message);
-		message[999] = '\0';
+        message[999] = '/0';
 
 		std::cerr << message << std::endl;
 
@@ -193,13 +193,15 @@ struct
 
 void init()
 {
+    //string racineProjet = "C:/Users/etu/workspace/code/Rendu temps reel/";
+    std::string racineProjet = "C:/Users/etu/Documents/GitHub/Gamagora-Rendu_temps_reel-TP/";
+
 	// Build our program and an empty VAO
-    gs.program = buildProgram("C:/Users/etu/workspace/code/Rendu temps reel/basic.vsl", "C:/Users/etu/workspace/code/Rendu temps reel/basic.fsl");
+    gs.program = buildProgram((racineProjet+(std::string)"basic.vsl").c_str(), (racineProjet+(std::string)"basic.fsl").c_str());
 
 
     Mesh m;
-
-    m = ObjManager::loadFromOBJ(Vector3D(0,0,0), "C:/Users/etu/workspace/code/Rendu temps reel/M9.obj");
+    m = ObjManager::loadFromOBJ(Vector3D(0,0,0), (racineProjet+(std::string)"monkey2.obj").c_str());
 
     nbVertex = m.nbface();
 
@@ -210,13 +212,21 @@ void init()
     std::vector<int> face = m.getface();
 
     int i=0;
-    for(int j=0; j<face.size(); j+=3){
+    for(int j=0; j<face.size(); j++){
         //set vertex
         data[i] = vertex[face[j]].x;
         data[i+1] = vertex[face[j]].y;
         data[i+2] = vertex[face[j]].z;
         data[i+3] = 1;
 
+
+        dataNormal[i] = m.getNormals()[m.getNormalIds()[j]].x;
+        dataNormal[i+1] = m.getNormals()[m.getNormalIds()[j]].y;
+        dataNormal[i+2] = m.getNormals()[m.getNormalIds()[j]].z;
+        dataNormal[i+3] = 1;
+
+        i+=4;
+        /*
         data[i+4] = vertex[face[j+1]].x;
         data[i+5] = vertex[face[j+1]].y;
         data[i+6] = vertex[face[j+1]].z;
@@ -227,8 +237,9 @@ void init()
         data[i+10] = vertex[face[j+2]].z;
         data[i+11] = 1;
 
+        /*
         //set normal
-        Vector3D normal = ( vertex[face[j+1]] - vertex[face[j]] ).crossProduct( ( vertex[face[j+2]] - vertex[face[j+1]] ) );
+        Vector3D normal = ( vertex[face[j+1]] - vertex[face[j]] ).crossProduct( ( vertex[face[j+2]] - vertex[face[j]] ) );
         normal.normalize();
 
         dataNormal[i] = normal.x;       dataNormal[i+4] = normal.x;     dataNormal[i+8] = normal.x;
@@ -236,7 +247,7 @@ void init()
         dataNormal[i+2] = normal.z;     dataNormal[i+6] = normal.z;     dataNormal[i+10] = normal.z;
         dataNormal[i+3] = 1;            dataNormal[i+7] = 1;            dataNormal[i+11] = 1;
 
-        i+=12;
+        i+=12;*/
     }
 
     //m.getvertex();
@@ -249,25 +260,25 @@ void init()
                     -0.5, 0.5, 0, 1};*/
 
 	GLuint buffer;
-	glGenBuffers(1, &buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glGenBuffers(1, &buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
     glBufferData(GL_ARRAY_BUFFER, m.nbface()*4*4, data, GL_STATIC_DRAW);
 
     GLuint buffer2;
     glGenBuffers(1, &buffer2);
     glBindBuffer(GL_ARRAY_BUFFER, buffer2);
-    glBufferData(GL_ARRAY_BUFFER, m.nbface()*4*4, data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, m.nbface()*4*4, dataNormal, GL_STATIC_READ);
 
 	glCreateVertexArrays(1, &gs.vao);
 
 	glBindVertexArray(gs.vao);
 
-		glBindBuffer(GL_ARRAY_BUFFER, buffer);
-		glVertexAttribPointer(12, 3, GL_FLOAT, GL_FALSE, 16, 0);
+        glBindBuffer(GL_ARRAY_BUFFER, buffer);
+        glVertexAttribPointer(12, 4, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray(12);
 
         glBindBuffer(GL_ARRAY_BUFFER, buffer2);
-        glVertexAttribPointer(13, 3, GL_FLOAT, GL_FALSE, 16, 0);
+        glVertexAttribPointer(13, 4, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(13);
 
     glBindVertexArray(0);
@@ -283,8 +294,8 @@ void init()
 
      // Camera matrix
      glm::mat4 View = glm::lookAt(
-                    glm::vec3(0,0,-2), // Camera is at (4,3,3), in World Space
-                    glm::vec3(0,0,0), // and looks at the origin
+                    glm::vec3(0,2,-4), // Camera is at (4,3,3), in World Space
+                    glm::vec3(0,0.5,0), // and looks at the origin
                     glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
                     );
 
@@ -312,7 +323,7 @@ void render(GLFWwindow* window)
 
     double t = fmod(glfwGetTime(), 3.0)/3.0;
 
-    glm::vec3 lightPosition(10.0f,0.0f,0);
+    glm::vec3 lightPosition(3.0f,0.0f,0);
 
     glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -321,20 +332,31 @@ void render(GLFWwindow* window)
     glBindVertexArray(gs.vao);
 
     {
-        float color[3] = {sin(t*3.14),1,0};
+        //float color[3] = {sin(t*3.14),1,0};
+        float color[3] = {0,1,0};
 
         glProgramUniform3fv(gs.program, 3, 1, color);
         glProgramUniform3fv(gs.program, 4, 1, glm::value_ptr( lightPosition ));
 
         glm::mat4 transf;
 
+
         transf = //glm::translate(glm::mat4(1.0f), glm::vec3(cos(t*6.28), sin(t*6.28), 0.0) )*
                 glm::rotate(glm::mat4(1.0f), (float)(t*6.28f), glm::vec3(0,1,0));
+
 
 
         glProgramUniformMatrix4fv(gs.program, 1, 1, GL_FALSE,  &transf[0][0]);
 
         glDrawArrays(GL_TRIANGLES, 0, nbVertex*4);
+/*
+        transf = glm::translate(glm::mat4(1.0f), glm::vec3(1.0, 1.1, 0.0) );
+                //glm::rotate(glm::mat4(1.0f), (float)(t*6.28f), glm::vec3(0,1,0));
+
+
+        glProgramUniformMatrix4fv(gs.program, 1, 1, GL_FALSE,  &transf[0][0]);
+
+        glDrawArrays(GL_TRIANGLES, 0, nbVertex*4);*/
 
 
         /*
