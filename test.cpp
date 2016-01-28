@@ -24,6 +24,41 @@ void init();
 
 int nbVertex;
 
+float angleX =0, angleY =0, anglePhiLight = 0, angleTetaLight = 0;
+
+//Input management for rotation
+void inputHandling(GLFWwindow* window){
+    //For object rotation
+    if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        angleY -= 0.1;
+    else if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        angleY += 0.1;
+
+    if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+        angleX += 0.1;
+    else if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+        angleX -= 0.1;
+
+
+    //For light placement
+
+    if(glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS)
+        anglePhiLight -= 0.1;
+    else if(glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS)
+        anglePhiLight += 0.1;
+
+    /*
+    if(glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
+        angleTetaLight -= 0.1;
+    else if(glfwGetKey(window, GLFW_KEY_KP_5) == GLFW_PRESS)
+        angleTetaLight += 0.1;
+        */
+
+    //For exit
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GL_TRUE);
+}
+
 // This function is called on any openGL API error
 void debug(GLenum, // source
 		   GLenum, // type
@@ -193,15 +228,16 @@ struct
 
 void init()
 {
-    //string racineProjet = "C:/Users/etu/workspace/code/Rendu temps reel/";
-    std::string racineProjet = "C:/Users/etu/Documents/GitHub/Gamagora-Rendu_temps_reel-TP/";
+    //std::string racineProjet = "C:/Users/etu/workspace/code/Rendu temps reel/";
+    //std::string racineProjet = "C:/Users/etu/Documents/GitHub/Gamagora-Rendu_temps_reel-TP/";
+    std::string racineProjet = "B:/Utilisateur/git/code/Gamagora-Rendu_temps_reel-TP/";
 
 	// Build our program and an empty VAO
     gs.program = buildProgram((racineProjet+(std::string)"basic.vsl").c_str(), (racineProjet+(std::string)"basic.fsl").c_str());
 
 
     Mesh m;
-    m = ObjManager::loadFromOBJ(Vector3D(0,0,0), (racineProjet+(std::string)"monkey2.obj").c_str());
+    m = ObjManager::loadFromOBJ(Vector3D(0,0,0), (racineProjet+(std::string)"monkey.obj").c_str());
 
     nbVertex = m.nbface();
 
@@ -210,6 +246,8 @@ void init()
 
     std::vector<Vector3D> vertex = m.getvertex();
     std::vector<int> face = m.getface();
+    std::vector<Vector3D> normals = m.getNormals();
+    std::vector<int> normalIds = m.getNormalIds();
 
     int i=0;
     for(int j=0; j<face.size(); j++){
@@ -220,12 +258,14 @@ void init()
         data[i+3] = 1;
 
 
-        dataNormal[i] = m.getNormals()[m.getNormalIds()[j]].x;
-        dataNormal[i+1] = m.getNormals()[m.getNormalIds()[j]].y;
-        dataNormal[i+2] = m.getNormals()[m.getNormalIds()[j]].z;
+
+        dataNormal[i] = normals[normalIds[j]].x;
+        dataNormal[i+1] = normals[normalIds[j]].y;
+        dataNormal[i+2] = normals[normalIds[j]].z;
         dataNormal[i+3] = 1;
 
         i+=4;
+
         /*
         data[i+4] = vertex[face[j+1]].x;
         data[i+5] = vertex[face[j+1]].y;
@@ -237,7 +277,7 @@ void init()
         data[i+10] = vertex[face[j+2]].z;
         data[i+11] = 1;
 
-        /*
+
         //set normal
         Vector3D normal = ( vertex[face[j+1]] - vertex[face[j]] ).crossProduct( ( vertex[face[j+2]] - vertex[face[j]] ) );
         normal.normalize();
@@ -294,8 +334,8 @@ void init()
 
      // Camera matrix
      glm::mat4 View = glm::lookAt(
-                    glm::vec3(0,2,-4), // Camera is at (4,3,3), in World Space
-                    glm::vec3(0,0.5,0), // and looks at the origin
+                    glm::vec3(0,2,5), // Camera is at (4,3,3), in World Space
+                    glm::vec3(0,0,0), // and looks at the origin
                     glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
                     );
 
@@ -321,18 +361,21 @@ void render(GLFWwindow* window)
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
 
-    double t = fmod(glfwGetTime(), 3.0)/3.0;
 
-    glm::vec3 lightPosition(3.0f,0.0f,0);
+
+    glm::vec3 lightPosition(10.0f*sinf(anglePhiLight)*cosf(angleTetaLight),
+                            10.0f*sinf(anglePhiLight)*sinf(angleTetaLight),
+                            10.0f*cos(anglePhiLight));
 
     glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
+
+    inputHandling(window);
 
     glUseProgram(gs.program);
     glBindVertexArray(gs.vao);
 
     {
-        //float color[3] = {sin(t*3.14),1,0};
         float color[3] = {0,1,0};
 
         glProgramUniform3fv(gs.program, 3, 1, color);
@@ -340,10 +383,8 @@ void render(GLFWwindow* window)
 
         glm::mat4 transf;
 
-
-        transf = //glm::translate(glm::mat4(1.0f), glm::vec3(cos(t*6.28), sin(t*6.28), 0.0) )*
-                glm::rotate(glm::mat4(1.0f), (float)(t*6.28f), glm::vec3(0,1,0));
-
+        transf = glm::rotate(glm::mat4(1.0f), angleX, glm::vec3(0,1,0)) *
+                glm::rotate(glm::mat4(1.0f), angleY, glm::vec3(1,0,0));
 
 
         glProgramUniformMatrix4fv(gs.program, 1, 1, GL_FALSE,  &transf[0][0]);
