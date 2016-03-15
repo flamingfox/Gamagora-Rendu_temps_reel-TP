@@ -1,0 +1,25 @@
+﻿Build started 15/03/2016 18:51:52.
+     1>Project "C:\Users\etu\Documents\GitHub\Gamagora-Rendu_temps_reel-TP\Temps Reel.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\CL.exe /c /Zi /nologo /W3 /WX- /Od /D WIN32 /D _DEBUG /D _CONSOLE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Debug\\" /Fd"x64\Debug\vc120.pdb" /Gd /TP /errorReport:prompt test.cpp
+         test.cpp
+     1>c:\users\etu\documents\github\gamagora-rendu_temps_reel-tp\lib\vector3d.h(255): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\etu\documents\github\gamagora-rendu_temps_reel-tp\lib\vector3d.h(256): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\etu\documents\github\gamagora-rendu_temps_reel-tp\lib\vector3d.h(257): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>test.cpp(150): warning C4267: 'initializing' : conversion from 'size_t' to 'GLint', possible loss of data
+     1>test.cpp(166): warning C4305: '=' : truncation from 'int' to 'char'
+     1>test.cpp(166): warning C4309: '=' : truncation of constant value
+     1>test.cpp(210): warning C4305: '=' : truncation from 'int' to 'char'
+     1>test.cpp(210): warning C4309: '=' : truncation of constant value
+     1>test.cpp(248): warning C4267: '=' : conversion from 'size_t' to 'int', possible loss of data
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\etu\Documents\GitHub\Gamagora-Rendu_temps_reel-TP\x64\Debug\Temps Reel.exe" /INCREMENTAL /NOLOGO opengl32.lib glew32.lib glfw3.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\etu\Documents\GitHub\Gamagora-Rendu_temps_reel-TP\x64\Debug\Temps Reel.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\etu\Documents\GitHub\Gamagora-Rendu_temps_reel-TP\x64\Debug\Temps Reel.lib" /MACHINE:X64 x64\Debug\mesh.obj
+         x64\Debug\objmanager.obj
+         x64\Debug\vector3d.obj
+         x64\Debug\test.obj
+         Temps Reel.vcxproj -> C:\Users\etu\Documents\GitHub\Gamagora-Rendu_temps_reel-TP\x64\Debug\Temps Reel.exe
+     1>Done Building Project "C:\Users\etu\Documents\GitHub\Gamagora-Rendu_temps_reel-TP\Temps Reel.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.89

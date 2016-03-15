@@ -33,28 +33,28 @@ void ajoutSol(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, const 
 void inputHandling(GLFWwindow* window){
     //For object rotation
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        angleY -= 0.1;
+        angleY -= 0.1f;
     else if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        angleY += 0.1;
+        angleY += 0.1f;
 
     if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-        angleX += 0.1;
+        angleX += 0.1f;
     else if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-        angleX -= 0.1;
+        angleX -= 0.1f;
 
 
     //For light placement
 
     if(glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS)
-        anglePhiLight -= 0.1;
+        anglePhiLight -= 0.1f;
     else if(glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS)
-        anglePhiLight += 0.1;
+        anglePhiLight += 0.1f;
 
 
     if(glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
-        angleTetaLight -= 0.1;
+        angleTetaLight -= 0.1f;
     else if(glfwGetKey(window, GLFW_KEY_KP_5) == GLFW_PRESS)
-        angleTetaLight += 0.1;
+        angleTetaLight += 0.1f;
 
 
     //For exit
@@ -226,7 +226,6 @@ GLuint buildProgram(const std::string vertexFile, const std::string fragmentFile
 struct
 {
     GLuint programView; // shaders for view camera
-    GLuint programShadow; // shaders for light camera
 	GLuint vao; // a vertex array object
 
     GLuint depthTexture; // texture from the light camera
@@ -236,13 +235,11 @@ struct
 void init()
 {
     //std::string racineProjet = "C:/Users/etu/workspace/code/Rendu temps reel/";
-    //std::string racineProjet = "C:/Users/etu/Documents/GitHub/Gamagora-Rendu_temps_reel-TP/";
-    std::string racineProjet = "B:/Utilisateur/git/code/Gamagora-Rendu_temps_reel-TP/";
+    std::string racineProjet = "C:/Users/etu/Documents/GitHub/Gamagora-Rendu_temps_reel-TP/";
+    //std::string racineProjet = "B:/Utilisateur/git/code/Gamagora-Rendu_temps_reel-TP/";
 
 	// Build our program and an empty VAO
     gs.programView = buildProgram((racineProjet+(std::string)"basic.vsl").c_str(), (racineProjet+(std::string)"basic.fsl").c_str());
-
-    gs.programShadow = buildProgram((racineProjet+(std::string)"light.vsl").c_str(), (racineProjet+(std::string)"light.fsl").c_str());
 
 
     Mesh m;
@@ -250,8 +247,8 @@ void init()
 
     nbVertex = m.nbface()+6; //nbface + quad "sol"
 
-    float data[nbVertex*4];
-    float dataNormal[nbVertex*4];
+    float* data = (float*) malloc(nbVertex*4*sizeof(float));
+	float* dataNormal = (float*) malloc(nbVertex * 4 * sizeof(float));
 
     std::vector<Vector3D> vertex = m.getvertex();
     std::vector<int> face = m.getface();
@@ -274,33 +271,10 @@ void init()
         dataNormal[i+3] = 1;
 
         i+=4;
-
-        /*
-        data[i+4] = vertex[face[j+1]].x;
-        data[i+5] = vertex[face[j+1]].y;
-        data[i+6] = vertex[face[j+1]].z;
-        data[i+7] = 1;
-
-        data[i+8] = vertex[face[j+2]].x;
-        data[i+9] = vertex[face[j+2]].y;
-        data[i+10] = vertex[face[j+2]].z;
-        data[i+11] = 1;
-
-
-        //set normal
-        Vector3D normal = ( vertex[face[j+1]] - vertex[face[j]] ).crossProduct( ( vertex[face[j+2]] - vertex[face[j]] ) );
-        normal.normalize();
-
-        dataNormal[i] = normal.x;       dataNormal[i+4] = normal.x;     dataNormal[i+8] = normal.x;
-        dataNormal[i+1] = normal.y;     dataNormal[i+5] = normal.y;     dataNormal[i+9] = normal.y;
-        dataNormal[i+2] = normal.z;     dataNormal[i+6] = normal.z;     dataNormal[i+10] = normal.z;
-        dataNormal[i+3] = 1;            dataNormal[i+7] = 1;            dataNormal[i+11] = 1;
-
-        i+=12;*/
     }
 
     //ajout du quad pour faire le sol
-    ajoutSol(Vector3D(-3,-1,-3), Vector3D(3,-1,-3), Vector3D(3,-1,3), Vector3D(-3,-1,3), Vector3D(0,1,0),
+    ajoutSol(Vector3D(-15,-1,-15), Vector3D(15,-1,-15), Vector3D(15,-1,15), Vector3D(-15,-1,15), Vector3D(0,1,0),
                   nbVertex*4, data, dataNormal);
 
 
@@ -334,18 +308,21 @@ void init()
     // create the depth texture
     glGenTextures(1, &gs.depthTexture);
     glBindTexture(GL_TEXTURE_2D, gs.depthTexture);
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, 200, 200);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, 640, 480);
 
     // Framebuffer
     glGenFramebuffers(1, &gs.fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, gs.fbo);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, gs.depthTexture, 0);
-
-    glDrawBuffer(GL_NONE); // No color buffer is drawn to.
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, gs.depthTexture, 0);    
 
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, gs.depthTexture);
+
+	glBindVertexArray(0);
+	free(data); free(dataNormal);
 }
 
 void render(GLFWwindow* window)
@@ -367,9 +344,7 @@ void render(GLFWwindow* window)
 
     // come from http://www.opengl-tutorial.org/fr/beginners-tutorials/tutorial-3-matrices/
 
-    // Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-     //glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 16.0 / (float)9.0, 0.1f, 10.0f);
-     glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 640.0 / (float) 480.0, 0.1f, 15.0f);
+	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 50.0f);
 
      // Camera matrix
      glm::mat4 ViewCamera = glm::lookAt(
@@ -378,22 +353,19 @@ void render(GLFWwindow* window)
                     glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
                     );
 
-     // Model matrix : an identity matrix (model will be at the origin)
+
      glm::mat4 Model = glm::mat4(1.0f);
 
-     // Our ModelViewProjection : multiplication of our 3 matrices
+
      glm::mat4 mvpCamera = Projection * ViewCamera * Model; // Remember, matrix multiplication is the other way around
 
-     // Get a handle for our "MVP" uniform
-      // Only during the initialisation
-      //GLuint MatrixID = glGetUniformLocation(program_id, "MVP");
+     //glProgramUniformMatrix4fv(gs.programView, 23, 1, GL_FALSE, &mvpCamera[0][0]);
 
-      // Send our transformation to the currently bound shader, in the "MVP" uniform
-      // This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
-      glProgramUniformMatrix4fv(gs.programView, 23, 1, GL_FALSE, &mvpCamera[0][0]);
+
 
     /********** Section lumière **********/
-    glm::vec3 lightPosition(0, 3.f, 5.f);
+
+    glm::vec3 lightPosition(0, 5.f, 15.f);
 
     glm::vec4 lightPositionTransformed =
             glm::rotate(glm::mat4(1.0f), anglePhiLight, glm::vec3(0,1,0)) *
@@ -403,7 +375,7 @@ void render(GLFWwindow* window)
 
     lightPosition = glm::vec3(XYZ(lightPositionTransformed));
 
-    Projection = glm::perspective(glm::radians(45.0f), (float) 640.0 / (float) 480.0, 0.1f, 15.0f);
+	Projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 50.0f);
 
     // Light Camera matrix
     glm::mat4 ViewLightCamera = glm::lookAt(
@@ -415,63 +387,62 @@ void render(GLFWwindow* window)
     // Our ModelViewProjection : multiplication of our 3 matrices
     glm::mat4 mvpLightCamera = Projection * ViewLightCamera * Model; // Remember, matrix multiplication is the other way around
 
-    glProgramUniformMatrix4fv(gs.programShadow, 22, 1, GL_FALSE, &mvpLightCamera[0][0]);
-
-    glm::mat4 biasMatrix(
-     0.5, 0.0, 0.0, 0.0,
-     0.0, 0.5, 0.0, 0.0,
-     0.0, 0.0, 0.5, 0.0,
-     0.5, 0.5, 0.5, 1.0
-     );
-
-     glm::mat4 lightBiasMVP = biasMatrix*mvpLightCamera;
-
-    glProgramUniformMatrix4fv(gs.programView, 22, 1, GL_FALSE, &lightBiasMVP[0][0]);
+    //glProgramUniformMatrix4fv(gs.programView, 22, 1, GL_FALSE, &mvpLightCamera[0][0]);
 
 
 
+	float color[3] = { 0, 1, 0 };
 
-    glClear(GL_COLOR_BUFFER_BIT);
-    glClear(GL_DEPTH_BUFFER_BIT);
+	glProgramUniform3fv(gs.programView, 3, 1, color);
+	glProgramUniform3fv(gs.programView, 4, 1, glm::value_ptr(lightPosition));
 
-    glUseProgram(gs.programShadow);
-    glBindVertexArray(gs.vao);
 
-    glViewport(0, 0, width, height);
-    //glBindFramebuffer(GL_FRAMEBUFFER, gs.fbo);
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, gs.fbo);
+	glViewport(0, 0, width, height);
+
+	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	glUseProgram(gs.programView);
+	glBindVertexArray(gs.vao);
+
     {
+		glProgramUniformMatrix4fv(gs.programView, 22, 1, GL_FALSE, &mvpLightCamera[0][0]);
+		glProgramUniformMatrix4fv(gs.programView, 23, 1, GL_FALSE, &mvpLightCamera[0][0]);
+
+		glProgramUniform3fv(gs.programView, 3, 1, color);
+		glProgramUniform3fv(gs.programView, 4, 1, glm::value_ptr(lightPosition));
 
         glDrawArrays(GL_TRIANGLES, 0, nbVertex*4);
     }
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //glBindVertexArray(0);
+    //glUseProgram(0);
 
 
+
+
+    
+	
+    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindVertexArray(0);
-    glUseProgram(0);
+	glViewport(0, 0, width, height);
 
+	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_DEPTH_BUFFER_BIT);
 
-
-
-    glClear(GL_COLOR_BUFFER_BIT);
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-    glViewport(0, 0, width, height);
-
-    glUseProgram(gs.programView);
-    glBindVertexArray(gs.vao);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, gs.depthTexture);
+    //glUseProgram(gs.programView);
+    //glBindVertexArray(gs.vao);
     {
-        float color[3] = {0,1,0};
+		glProgramUniformMatrix4fv(gs.programView, 23, 1, GL_FALSE, &mvpCamera[0][0]);
+		glProgramUniformMatrix4fv(gs.programView, 22, 1, GL_FALSE, &mvpLightCamera[0][0]);
 
-        glProgramUniform3fv(gs.programView, 3, 1, color);
-        glProgramUniform3fv(gs.programView, 4, 1, glm::value_ptr( lightPosition ));
+		glProgramUniform3fv(gs.programView, 3, 1, color);
+		glProgramUniform3fv(gs.programView, 4, 1, glm::value_ptr(lightPosition));
 
         glDrawArrays(GL_TRIANGLES, 0, nbVertex*4);
     }
-
-    glBindTexture(GL_TEXTURE_2D, 0);
 
     glBindVertexArray(0);
     glUseProgram(0);

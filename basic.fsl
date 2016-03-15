@@ -2,7 +2,7 @@
 
 out vec4 color_out;
 
-uniform sampler2D textureDepth;
+layout(binding = 0) uniform sampler2D textureDepth;
 
 layout(location=3) uniform vec3 color;
 layout(location=4) uniform vec3 lightPosition;
@@ -15,15 +15,24 @@ in vec4 shadowCoord;
 void main()
 {
 
+		vec4 depthPos = (shadowCoord / shadowCoord.w + vec4(1,1,1,0)) / vec4(2,2,2,1);
+		vec4 depth = texture(textureDepth, depthPos.xy);
+	
+		//if(depthPos.x > 0 && depthPos.x < 1 && depthPos.y > 0 && depthPos.y < 1 &&depthPos.z > depth.z + 0.05)
+
         float visibility = 1.0;
 
-        if ( texture( textureDepth, shadowCoord.xy ).z  <  shadowCoord.z){
+        if ( depth.z+0.0005  <  depthPos.z){
             visibility = 0.1;
         }
 
+		//vec4 depth = texture(textureDepth, finalPosition.xy);
 
-        color_out = visibility * vec4(color, 1) * max(0, dot( normalize(shadingNormal), normalize(lightPosition - finalPosition) ));
+
+        color_out = visibility * vec4(color, 1) * max(0, dot( normalize(shadingNormal), normalize(lightPosition-finalPosition) ));
         //color_out = vec4(color, 1) * dot( normalize(shadingNormal), normalize(lightPosition - finalPosition) );
         //color_out = vec4((shadingNormal), 1);
         //color_out = vec4(color, 1);
+
+       //color_out = vec4(depth.xxx, 1);
 }
