@@ -2,15 +2,27 @@
 
 out vec4 color_out;
 
+uniform sampler2D textureDepth;
+
 layout(location=3) uniform vec3 color;
 layout(location=4) uniform vec3 lightPosition;
 
 in vec3 shadingNormal;
 in vec3 finalPosition;
 
+in vec4 shadowCoord;
+
 void main()
 {
-        color_out = vec4(color, 1) * max(0, dot( normalize(shadingNormal), normalize(lightPosition - finalPosition) ));
+
+        float visibility = 1.0;
+
+        if ( texture( textureDepth, shadowCoord.xy ).z  <  shadowCoord.z){
+            visibility = 0.1;
+        }
+
+
+        color_out = visibility * vec4(color, 1) * max(0, dot( normalize(shadingNormal), normalize(lightPosition - finalPosition) ));
         //color_out = vec4(color, 1) * dot( normalize(shadingNormal), normalize(lightPosition - finalPosition) );
         //color_out = vec4((shadingNormal), 1);
         //color_out = vec4(color, 1);

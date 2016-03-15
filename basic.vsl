@@ -1,7 +1,5 @@
 #version 430
 
-layout(location=1) uniform mat4 transform;
-
 layout(location=22) uniform mat4 cameraLightTransform;
 layout(location=23) uniform mat4 cameraTransform;
 
@@ -11,10 +9,14 @@ layout(location=13) in vec4 normal;
 out vec3 shadingNormal;
 out vec3 finalPosition;
 
+out vec4 shadowCoord;
+
 void main()
 {
-        gl_Position = cameraTransform * transform * position;
+        gl_Position = cameraTransform * position;
 
         finalPosition = vec3(gl_Position.x, gl_Position.y, gl_Position.z);
         shadingNormal = vec3(normal.x, normal.y, normal.z);
+
+        shadowCoord = cameraLightTransform*position;
 }

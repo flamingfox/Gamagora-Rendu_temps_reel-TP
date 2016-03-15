@@ -29,9 +29,6 @@ float angleX =0, angleY =0, anglePhiLight = 0, angleTetaLight = 0;
 void ajoutSol(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, const Vector3D& p3, const Vector3D& normal,
               int tailleTableau, float* tableauVertex, float* tableauNormal);
 
-//constant for the mvp
-glm::mat4 Projection, Model;
-
 //Input management for rotation
 void inputHandling(GLFWwindow* window){
     //For object rotation
@@ -334,16 +331,49 @@ void init()
 
     glEnable(GL_DEPTH_TEST);
 
+    // create the depth texture
+    glGenTextures(1, &gs.depthTexture);
+    glBindTexture(GL_TEXTURE_2D, gs.depthTexture);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, 200, 200);
+
+    // Framebuffer
+    glGenFramebuffers(1, &gs.fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, gs.fbo);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, gs.depthTexture, 0);
+
+    glDrawBuffer(GL_NONE); // No color buffer is drawn to.
+
+    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
+
+void render(GLFWwindow* window)
+{
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+
+    inputHandling(window);
+
+    /********** Section camera view **********/
+
+    glm::vec3 cameraPosition(0,2,7);
+
+    glm::vec4 cameraPositionTransformed =
+            glm::rotate(glm::mat4(1.0f), angleX, glm::vec3(0,1,0)) *
+            glm::rotate(glm::mat4(1.0f), angleY, glm::vec3(1,0,0))* glm::vec4(cameraPosition, 1.0f);
+
+    cameraPosition = glm::vec3(XYZ(cameraPositionTransformed));
 
     // come from http://www.opengl-tutorial.org/fr/beginners-tutorials/tutorial-3-matrices/
 
     // Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
      //glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 16.0 / (float)9.0, 0.1f, 10.0f);
-     glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 640.0 / (float) 480.0, 0.1f, 10.0f);
+     glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 640.0 / (float) 480.0, 0.1f, 15.0f);
 
      // Camera matrix
      glm::mat4 ViewCamera = glm::lookAt(
-                    glm::vec3(0,2,5), // Camera is at (4,3,3), in World Space
+                    cameraPosition, // Camera is at (4,3,3), in World Space
                     glm::vec3(0,0,0), // and looks at the origin
                     glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
                     );
@@ -362,44 +392,8 @@ void init()
       // This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
       glProgramUniformMatrix4fv(gs.programView, 23, 1, GL_FALSE, &mvpCamera[0][0]);
 
-
-
-
-
-      // create the depth texture
-      glGenTextures(1, &gs.depthTexture);
-      glBindTexture(GL_TEXTURE_2D, gs.depthTexture);
-      glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, 200, 200);
-
-      // Framebuffer
-      glGenFramebuffers(1, &gs.fbo);
-      glBindFramebuffer(GL_FRAMEBUFFER, gs.fbo);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gs.depthTexture, 0);
-
-      assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-}
-
-void render(GLFWwindow* window)
-{
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-
-    inputHandling(window);
-
-
-    glm::mat4 transf;
-
-    transf = glm::rotate(glm::mat4(1.0f), angleX, glm::vec3(0,1,0)) *
-            glm::rotate(glm::mat4(1.0f), angleY, glm::vec3(1,0,0));
-
-    glProgramUniformMatrix4fv(gs.programView, 1, 1, GL_FALSE,  &transf[0][0]);
-    glProgramUniformMatrix4fv(gs.programShadow, 1, 1, GL_FALSE,  &transf[0][0]);
-
-
     /********** Section lumière **********/
-    glm::vec3 lightPosition(10.0f, 0, 10.f);
+    glm::vec3 lightPosition(0, 3.f, 5.f);
 
     glm::vec4 lightPositionTransformed =
             glm::rotate(glm::mat4(1.0f), anglePhiLight, glm::vec3(0,1,0)) *
@@ -408,6 +402,8 @@ void render(GLFWwindow* window)
     /*** calcul du mvp de la caméra lumière (déplacement de la lumière donc calcule ici) ***/
 
     lightPosition = glm::vec3(XYZ(lightPositionTransformed));
+
+    Projection = glm::perspective(glm::radians(45.0f), (float) 640.0 / (float) 480.0, 0.1f, 15.0f);
 
     // Light Camera matrix
     glm::mat4 ViewLightCamera = glm::lookAt(
@@ -420,7 +416,17 @@ void render(GLFWwindow* window)
     glm::mat4 mvpLightCamera = Projection * ViewLightCamera * Model; // Remember, matrix multiplication is the other way around
 
     glProgramUniformMatrix4fv(gs.programShadow, 22, 1, GL_FALSE, &mvpLightCamera[0][0]);
-    glProgramUniformMatrix4fv(gs.programView, 22, 1, GL_FALSE, &mvpLightCamera[0][0]);
+
+    glm::mat4 biasMatrix(
+     0.5, 0.0, 0.0, 0.0,
+     0.0, 0.5, 0.0, 0.0,
+     0.0, 0.0, 0.5, 0.0,
+     0.5, 0.5, 0.5, 1.0
+     );
+
+     glm::mat4 lightBiasMVP = biasMatrix*mvpLightCamera;
+
+    glProgramUniformMatrix4fv(gs.programView, 22, 1, GL_FALSE, &lightBiasMVP[0][0]);
 
 
 
@@ -428,23 +434,21 @@ void render(GLFWwindow* window)
     glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
 
-
-
-    glUseProgram(gs.programView);
+    glUseProgram(gs.programShadow);
     glBindVertexArray(gs.vao);
 
     glViewport(0, 0, width, height);
-
+    //glBindFramebuffer(GL_FRAMEBUFFER, gs.fbo);
     {
-        //glActiveTexture(GL_TEXTURE0);
-        //glBindTexture(GL_TEXTURE_2D, gs.depthTexture);
 
         glDrawArrays(GL_TRIANGLES, 0, nbVertex*4);
     }
 
 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindVertexArray(0);
     glUseProgram(0);
+
 
 
 
@@ -456,6 +460,8 @@ void render(GLFWwindow* window)
     glUseProgram(gs.programView);
     glBindVertexArray(gs.vao);
 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, gs.depthTexture);
     {
         float color[3] = {0,1,0};
 
@@ -464,6 +470,8 @@ void render(GLFWwindow* window)
 
         glDrawArrays(GL_TRIANGLES, 0, nbVertex*4);
     }
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     glBindVertexArray(0);
     glUseProgram(0);
