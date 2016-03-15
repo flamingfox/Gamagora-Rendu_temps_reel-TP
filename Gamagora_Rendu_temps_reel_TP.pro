@@ -21,7 +21,9 @@ SOURCES += \
 
 DISTFILES += \
     basic.fsl \
-    basic.vsl
+    basic.vsl \
+    light.fsl \
+    light.vsl
 
 HEADERS += \
     lib/mesh.h \

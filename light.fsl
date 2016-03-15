@@ -1,0 +1,12 @@
+#version 430
+
+
+out vec4 fragmentdepth;
+
+layout(location=4) uniform vec3 lightPosition;
+
+void main()
+{
+    fragmentdepth = vec4(1,0,0, 1);
+    //fragmentdepth = gl_FragCoord.z;
+}

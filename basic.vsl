@@ -2,6 +2,7 @@
 
 layout(location=1) uniform mat4 transform;
 
+layout(location=22) uniform mat4 cameraLightTransform;
 layout(location=23) uniform mat4 cameraTransform;
 
 layout(location=12) in vec4 position;

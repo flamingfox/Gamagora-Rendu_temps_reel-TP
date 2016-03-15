@@ -26,6 +26,12 @@ int nbVertex;
 
 float angleX =0, angleY =0, anglePhiLight = 0, angleTetaLight = 0;
 
+void ajoutSol(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, const Vector3D& p3, const Vector3D& normal,
+              int tailleTableau, float* tableauVertex, float* tableauNormal);
+
+//constant for the mvp
+glm::mat4 Projection, Model;
+
 //Input management for rotation
 void inputHandling(GLFWwindow* window){
     //For object rotation
@@ -47,12 +53,12 @@ void inputHandling(GLFWwindow* window){
     else if(glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS)
         anglePhiLight += 0.1;
 
-    /*
+
     if(glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
         angleTetaLight -= 0.1;
     else if(glfwGetKey(window, GLFW_KEY_KP_5) == GLFW_PRESS)
         angleTetaLight += 0.1;
-        */
+
 
     //For exit
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -222,8 +228,12 @@ GLuint buildProgram(const std::string vertexFile, const std::string fragmentFile
 // Store the global state of your program
 struct
 {
-	GLuint program; // a shader
+    GLuint programView; // shaders for view camera
+    GLuint programShadow; // shaders for light camera
 	GLuint vao; // a vertex array object
+
+    GLuint depthTexture; // texture from the light camera
+    GLuint fbo; //framebuffer for shadow
 } gs;
 
 void init()
@@ -233,13 +243,15 @@ void init()
     std::string racineProjet = "B:/Utilisateur/git/code/Gamagora-Rendu_temps_reel-TP/";
 
 	// Build our program and an empty VAO
-    gs.program = buildProgram((racineProjet+(std::string)"basic.vsl").c_str(), (racineProjet+(std::string)"basic.fsl").c_str());
+    gs.programView = buildProgram((racineProjet+(std::string)"basic.vsl").c_str(), (racineProjet+(std::string)"basic.fsl").c_str());
+
+    gs.programShadow = buildProgram((racineProjet+(std::string)"light.vsl").c_str(), (racineProjet+(std::string)"light.fsl").c_str());
 
 
     Mesh m;
     m = ObjManager::loadFromOBJ(Vector3D(0,0,0), (racineProjet+(std::string)"monkey.obj").c_str());
 
-    nbVertex = m.nbface();
+    nbVertex = m.nbface()+6; //nbface + quad "sol"
 
     float data[nbVertex*4];
     float dataNormal[nbVertex*4];
@@ -290,24 +302,21 @@ void init()
         i+=12;*/
     }
 
-    //m.getvertex();
-    //m.getface();
+    //ajout du quad pour faire le sol
+    ajoutSol(Vector3D(-3,-1,-3), Vector3D(3,-1,-3), Vector3D(3,-1,3), Vector3D(-3,-1,3), Vector3D(0,1,0),
+                  nbVertex*4, data, dataNormal);
 
-    /*
-    float data[16] = {-0.5, -0.5, 0, 1,
-                    0.5, -0.5, 0, 1,
-                    0.5, 0.5, 0, 1,
-                    -0.5, 0.5, 0, 1};*/
+
 
 	GLuint buffer;
     glGenBuffers(1, &buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, m.nbface()*4*4, data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, nbVertex*4*4, data, GL_STATIC_DRAW);
 
     GLuint buffer2;
     glGenBuffers(1, &buffer2);
     glBindBuffer(GL_ARRAY_BUFFER, buffer2);
-    glBufferData(GL_ARRAY_BUFFER, m.nbface()*4*4, dataNormal, GL_STATIC_READ);
+    glBufferData(GL_ARRAY_BUFFER, nbVertex*4*4, dataNormal, GL_STATIC_READ);
 
 	glCreateVertexArrays(1, &gs.vao);
 
@@ -333,7 +342,7 @@ void init()
      glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 640.0 / (float) 480.0, 0.1f, 10.0f);
 
      // Camera matrix
-     glm::mat4 View = glm::lookAt(
+     glm::mat4 ViewCamera = glm::lookAt(
                     glm::vec3(0,2,5), // Camera is at (4,3,3), in World Space
                     glm::vec3(0,0,0), // and looks at the origin
                     glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
@@ -343,7 +352,7 @@ void init()
      glm::mat4 Model = glm::mat4(1.0f);
 
      // Our ModelViewProjection : multiplication of our 3 matrices
-     glm::mat4 mvp = Projection * View * Model; // Remember, matrix multiplication is the other way around
+     glm::mat4 mvpCamera = Projection * ViewCamera * Model; // Remember, matrix multiplication is the other way around
 
      // Get a handle for our "MVP" uniform
       // Only during the initialisation
@@ -351,7 +360,24 @@ void init()
 
       // Send our transformation to the currently bound shader, in the "MVP" uniform
       // This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
-      glProgramUniformMatrix4fv(gs.program, 23, 1, GL_FALSE, &mvp[0][0]);
+      glProgramUniformMatrix4fv(gs.programView, 23, 1, GL_FALSE, &mvpCamera[0][0]);
+
+
+
+
+
+      // create the depth texture
+      glGenTextures(1, &gs.depthTexture);
+      glBindTexture(GL_TEXTURE_2D, gs.depthTexture);
+      glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, 200, 200);
+
+      // Framebuffer
+      glGenFramebuffers(1, &gs.fbo);
+      glBindFramebuffer(GL_FRAMEBUFFER, gs.fbo);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gs.depthTexture, 0);
+
+      assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 }
 
@@ -359,59 +385,110 @@ void render(GLFWwindow* window)
 {
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    glViewport(0, 0, width, height);
+
+    inputHandling(window);
+
+
+    glm::mat4 transf;
+
+    transf = glm::rotate(glm::mat4(1.0f), angleX, glm::vec3(0,1,0)) *
+            glm::rotate(glm::mat4(1.0f), angleY, glm::vec3(1,0,0));
+
+    glProgramUniformMatrix4fv(gs.programView, 1, 1, GL_FALSE,  &transf[0][0]);
+    glProgramUniformMatrix4fv(gs.programShadow, 1, 1, GL_FALSE,  &transf[0][0]);
+
+
+    /********** Section lumière **********/
+    glm::vec3 lightPosition(10.0f, 0, 10.f);
+
+    glm::vec4 lightPositionTransformed =
+            glm::rotate(glm::mat4(1.0f), anglePhiLight, glm::vec3(0,1,0)) *
+            glm::rotate(glm::mat4(1.0f), angleTetaLight, glm::vec3(1,0,0)) * glm::vec4(lightPosition,1.0f);
+
+    /*** calcul du mvp de la caméra lumière (déplacement de la lumière donc calcule ici) ***/
+
+    lightPosition = glm::vec3(XYZ(lightPositionTransformed));
+
+    // Light Camera matrix
+    glm::mat4 ViewLightCamera = glm::lookAt(
+                   lightPosition, // Camera is at (4,3,3), in World Space
+                   glm::vec3(0,0,0), // and looks at the origin
+                   glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
+                   );
+
+    // Our ModelViewProjection : multiplication of our 3 matrices
+    glm::mat4 mvpLightCamera = Projection * ViewLightCamera * Model; // Remember, matrix multiplication is the other way around
+
+    glProgramUniformMatrix4fv(gs.programShadow, 22, 1, GL_FALSE, &mvpLightCamera[0][0]);
+    glProgramUniformMatrix4fv(gs.programView, 22, 1, GL_FALSE, &mvpLightCamera[0][0]);
 
 
 
-    glm::vec3 lightPosition(10.0f*sinf(anglePhiLight)*cosf(angleTetaLight),
-                            10.0f*sinf(anglePhiLight)*sinf(angleTetaLight),
-                            10.0f*cos(anglePhiLight));
 
     glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    inputHandling(window);
 
-    glUseProgram(gs.program);
+
+    glUseProgram(gs.programView);
+    glBindVertexArray(gs.vao);
+
+    glViewport(0, 0, width, height);
+
+    {
+        //glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D, gs.depthTexture);
+
+        glDrawArrays(GL_TRIANGLES, 0, nbVertex*4);
+    }
+
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+
+
+
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glViewport(0, 0, width, height);
+
+    glUseProgram(gs.programView);
     glBindVertexArray(gs.vao);
 
     {
         float color[3] = {0,1,0};
 
-        glProgramUniform3fv(gs.program, 3, 1, color);
-        glProgramUniform3fv(gs.program, 4, 1, glm::value_ptr( lightPosition ));
-
-        glm::mat4 transf;
-
-        transf = glm::rotate(glm::mat4(1.0f), angleX, glm::vec3(0,1,0)) *
-                glm::rotate(glm::mat4(1.0f), angleY, glm::vec3(1,0,0));
-
-
-        glProgramUniformMatrix4fv(gs.program, 1, 1, GL_FALSE,  &transf[0][0]);
+        glProgramUniform3fv(gs.programView, 3, 1, color);
+        glProgramUniform3fv(gs.programView, 4, 1, glm::value_ptr( lightPosition ));
 
         glDrawArrays(GL_TRIANGLES, 0, nbVertex*4);
-/*
-        transf = glm::translate(glm::mat4(1.0f), glm::vec3(1.0, 1.1, 0.0) );
-                //glm::rotate(glm::mat4(1.0f), (float)(t*6.28f), glm::vec3(0,1,0));
-
-
-        glProgramUniformMatrix4fv(gs.program, 1, 1, GL_FALSE,  &transf[0][0]);
-
-        glDrawArrays(GL_TRIANGLES, 0, nbVertex*4);*/
-
-
-        /*
-        color[0] = 1; color[1] = 0, color[2] = sin(t*3.14);
-        glProgramUniform3fv(gs.program, 3, 1, color);
-
-        transf = glm::translate(glm::mat4(1.0f), glm::vec3(sin(-t*6.28), cos(t*6.18+3.14), 0.0) );
-
-        glProgramUniformMatrix4fv(gs.program, 1, 1, GL_FALSE, &transf[0][0]);
-
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);*/
     }
 
     glBindVertexArray(0);
     glUseProgram(0);
 
+}
+
+void ajoutSol(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, const Vector3D& p3, const Vector3D& normal,
+              int tailleTableau, float* tableauVertex, float* tableauNormal){
+
+    int index = tailleTableau - (6*4);
+
+    Vector3D vertexSol[6] = {p0, p1, p2, p2, p3, p0};
+
+    for(Vector3D& vec : vertexSol){
+
+        tableauVertex[index] = vec.x;
+        tableauVertex[index+1] = vec.y;
+        tableauVertex[index+2] = vec.z;
+        tableauVertex[index+3] = 1;
+
+        tableauNormal[index] = normal.x;
+        tableauNormal[index+1] = normal.y;
+        tableauNormal[index+2] = normal.z;
+        tableauNormal[index+3] = 1;
+
+        index+=4;
+    }
 }
